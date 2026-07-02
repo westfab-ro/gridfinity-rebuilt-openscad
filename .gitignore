@@ -3,6 +3,8 @@ ignore/
 stl/
 batch/
 site/
+renders/
+.DS_Store
 /*.json
 
 # From https://github.com/github/gitignore/blob/main/Python.gitignore
