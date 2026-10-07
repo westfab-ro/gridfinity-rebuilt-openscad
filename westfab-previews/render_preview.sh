@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Render white/gray/black previews for a layout config.
-# Usage: render/render_preview.sh render/layouts/set_4x4.json [color ...]
+# Usage: westfab-previews/render_preview.sh westfab-previews/layouts/WF-GF-4X4.json [color ...]
 set -euo pipefail
 
 BLENDER="${BLENDER:-/Applications/Blender.app/Contents/MacOS/Blender}"

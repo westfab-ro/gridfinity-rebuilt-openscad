@@ -73,31 +73,31 @@ openscad -o stl/bins/bin_3x2x6.stl \
 
 ## 2. Generating previews
 
-Clean white-background product renders live in `render/`. The Blender script is
+Clean white-background product renders live in `westfab-previews/`. The Blender script is
 the single source of visual consistency — camera framing, lighting, matte
 materials, bin seating, and the white background are all fixed. You only change
-the **layout JSON**. Rendered PNGs go to `renders/` (gitignored).
+the **layout JSON**. Rendered PNGs go to `westfab-previews/output/` (gitignored).
 
 ### Render a layout in all three colors
 
 ```bash
-render/render_preview.sh render/layouts/set_4x4.json
-# → renders/set_4x4_white_preview.png, _gray_, _black_
+westfab-previews/render_preview.sh westfab-previews/layouts/WF-GF-4X4.json
+# → westfab-previews/output/WF-GF-4X4_white_preview.png, _gray_, _black_
 ```
 
 Specific colors only:
 
 ```bash
-render/render_preview.sh render/layouts/set_4x4.json black
-render/render_preview.sh render/layouts/set_4x4.json white gray
+westfab-previews/render_preview.sh westfab-previews/layouts/WF-GF-4X4.json black
+westfab-previews/render_preview.sh westfab-previews/layouts/WF-GF-4X4.json white gray
 ```
 
 Single render / custom hex color:
 
 ```bash
 /Applications/Blender.app/Contents/MacOS/Blender --background \
-  --python render/render_layout.py -- \
-  --config render/layouts/set_4x4.json --color '#ff8800' --res 2000
+  --python westfab-previews/render_layout.py -- \
+  --config westfab-previews/layouts/WF-GF-4X4.json --color '#ff8800' --res 2000
 ```
 
 ### Options (passed after `--`)
@@ -106,13 +106,27 @@ Single render / custom hex color:
 |------|---------|---------|
 | `--config` | *(required)* | Layout JSON path |
 | `--color` | JSON `color` | `white` \| `gray` \| `black` \| `#RRGGBB` |
-| `--out` | `renders/<stem>_<color>_preview.png` | Output PNG |
+| `--out` | `westfab-previews/output/<stem>_<color>_preview.png` | Output PNG |
 | `--res` | `1600` | Square resolution (px) |
 | `--samples` | `160` | Cycles samples (higher = cleaner, slower) |
+| `--layer-height` | `0.4` | FDM layer-line height in mm; `0` disables (smooth matte). Bigger = more visible ridges |
+
+### PLA / FDM look
+
+Parts use a procedural PLA material: matte plastic plus horizontal **layer
+lines** generated from the object's Z coordinate (no downloaded texture — it's
+all shader nodes, so it scales to any part). `--layer-height` controls ridge
+spacing:
+
+- `0.2` — true fine layer height; realistic but nearly invisible unless you
+  render high-res (`--res 3200`) and zoom in.
+- `0.4` (default) — accurate and faintly visible at normal size.
+- `0.6`–`1.0` — progressively more pronounced "clearly 3D-printed" ridges.
+- `0` — no layer lines, smooth matte plastic.
 
 ### Defining a new layout
 
-Create a JSON file in `render/layouts/`. Example (`set_4x4.json`):
+Create a JSON file in `westfab-previews/layouts/`. Example (`WF-GF-4X4.json`):
 
 ```json
 {
@@ -132,8 +146,8 @@ Create a JSON file in `render/layouts/`. Example (`set_4x4.json`):
   bottom) so the plate reads as a tight base, not an oversized tray.
 
 > Make sure the STLs referenced in the layout exist in `stl/` first (run the
-> generation scripts). The 4×4 set uses `bin_2x2x5`, `bin_1x3x5`, `bin_1x2x5`
-> and `baseplate_4x4`.
+> generation scripts). The 4×4 set uses `bin_1x4x5`, `bin_1x3x5`, `bin_2x2x5`,
+> `bin_1x2x5`, `bin_1x1x5` and `baseplate_4x4`.
 
 ---
 
@@ -147,7 +161,7 @@ This clone is a westfab fork of kennetek's project.
 ### Save our work
 
 ```bash
-git add render/ westfab-instructions.md .gitignore
+git add westfab-previews/ westfab-instructions.md .gitignore
 git commit -m "..."
 git push origin main
 ```
@@ -165,5 +179,7 @@ git push origin main
 ## Products
 
 - **First eMAG product:** 7-piece 4×4 organizer set — 1× baseplate 4×4, 1× bin
-  2×2, 2× bins 1×3, 3× bins 1×2 (tiles all 16 cells). Layout:
-  `render/layouts/set_4x4.json`.
+  1×4, 1× bin 1×3, 1× bin 2×2, 2× bins 1×2, 1× bin 1×1 (tiles all 16 cells).
+  Layout: `westfab-previews/layouts/WF-GF-4X4.json`. Vault record: `WF-GF-4X4`.
+  After rendering, see `company-os/1_Products/_docs/Product images.md` for
+  OneDrive, JPEG conversion and the R2 upload.

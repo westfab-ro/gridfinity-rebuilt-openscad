@@ -3,13 +3,13 @@
 Render a clean white-background product preview of a Gridfinity layout.
 
 Usage (headless Blender):
-  blender --background --python render/render_layout.py -- \
-      --config render/layouts/set_4x4.json --color gray
+  blender --background --python westfab-previews/render_layout.py -- \
+      --config westfab-previews/layouts/WF-GF-4X4.json --color gray
 
 Options (after the `--`):
-  --config PATH   Layout JSON (see render/layouts/set_4x4.json). Required.
+  --config PATH   Layout JSON (see westfab-previews/layouts/WF-GF-4X4.json). Required.
   --color NAME    white | gray | black | #RRGGBB. Overrides config "color".
-  --out PATH      Output PNG. Default: renders/<config-stem>_<color>_preview.png
+  --out PATH      Output PNG. Default: westfab-previews/output/<config-stem>_<color>_preview.png
   --res N         Square resolution in px (default 1600).
   --samples N     Cycles samples (default 160).
 
@@ -45,7 +45,7 @@ COLOR_NAME = arg("--color", cfg.get("color", "gray"))
 RES = int(arg("--res", 1600))
 SAMPLES = int(arg("--samples", 160))
 stem = os.path.splitext(os.path.basename(CONFIG))[0]
-OUT = arg("--out", os.path.join(REPO, "renders", f"{stem}_{COLOR_NAME}_preview.png"))
+OUT = arg("--out", os.path.join(REPO, "westfab-previews", "output", f"{stem}_{COLOR_NAME}_preview.png"))
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 
 # ---------- color -> (rgb, roughness, specular) ----------
@@ -77,7 +77,53 @@ def make_mat(name, rgb, rough=0.5, spec=0.5):
         b.inputs["Specular IOR Level"].default_value = spec
     return m
 
-part_mat = make_mat("Part", COLOR, ROUGH, SPEC)
+def make_pla_mat(name, rgb, rough, spec, layer_h):
+    """Matte plastic with procedural FDM layer lines (horizontal ridges in Z).
+
+    Object-space Z (in mm) drives a sine wave with period == layer_h, fed into a
+    Bump node so the surface shows fine print layers. Also adds a little
+    roughness variation between layers for a realistic semi-matte PLA look.
+    """
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; nodes, links = nt.nodes, nt.links
+    b = nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*rgb, 1.0)
+    if "Specular IOR Level" in b.inputs:
+        b.inputs["Specular IOR Level"].default_value = spec
+
+    tc = nodes.new("ShaderNodeTexCoord")
+    sep = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(tc.outputs["Object"], sep.inputs["Vector"])
+    # Z / layer_h -> one unit per printed layer
+    div = nodes.new("ShaderNodeMath"); div.operation = 'DIVIDE'
+    div.inputs[1].default_value = max(layer_h, 1e-4)
+    links.new(sep.outputs["Z"], div.inputs[0])
+    # ping-pong(x, 1) -> triangle wave 0..1 each layer = crisp scallop ridges
+    tri = nodes.new("ShaderNodeMath"); tri.operation = 'PINGPONG'
+    tri.inputs[1].default_value = 1.0
+    links.new(div.outputs["Value"], tri.inputs[0])
+
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.7
+    bump.inputs["Distance"].default_value = layer_h * 0.9
+    links.new(tri.outputs["Value"], bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], b.inputs["Normal"])
+
+    # subtle roughness banding between layers
+    rr = nodes.new("ShaderNodeMapRange")
+    rr.inputs["From Min"].default_value = 0.0
+    rr.inputs["From Max"].default_value = 1.0
+    rr.inputs["To Min"].default_value = max(rough - 0.06, 0.0)
+    rr.inputs["To Max"].default_value = min(rough + 0.06, 1.0)
+    links.new(tri.outputs["Value"], rr.inputs["Value"])
+    links.new(rr.outputs["Result"], b.inputs["Roughness"])
+    return m
+
+LAYER_H = float(arg("--layer-height", 0.4))  # mm; 0 disables layer lines
+if LAYER_H > 0:
+    part_mat = make_pla_mat("Part", COLOR, ROUGH, SPEC, LAYER_H)
+else:
+    part_mat = make_mat("Part", COLOR, ROUGH, SPEC)
 
 def import_stl(path):
     before = set(bpy.data.objects)

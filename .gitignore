@@ -3,7 +3,7 @@ ignore/
 stl/
 batch/
 site/
-renders/
+westfab-previews/output/
 .DS_Store
 /*.json
 

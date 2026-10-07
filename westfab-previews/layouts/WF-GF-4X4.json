@@ -1,0 +1,12 @@
+{
+  "baseplate": "baseplates/baseplate_4x4.stl",
+  "color": "gray",
+  "placements": [
+    {"stl": "bins/bin_1x4x5.stl", "col": 0, "row": 0, "w": 1, "l": 4},
+    {"stl": "bins/bin_2x2x5.stl", "col": 1, "row": 0, "w": 2, "l": 2},
+    {"stl": "bins/bin_1x3x5.stl", "col": 3, "row": 0, "w": 1, "l": 3},
+    {"stl": "bins/bin_1x2x5.stl", "col": 1, "row": 2, "w": 2, "l": 1},
+    {"stl": "bins/bin_1x1x5.stl", "col": 1, "row": 3, "w": 1, "l": 1},
+    {"stl": "bins/bin_1x2x5.stl", "col": 2, "row": 3, "w": 2, "l": 1}
+  ]
+}
